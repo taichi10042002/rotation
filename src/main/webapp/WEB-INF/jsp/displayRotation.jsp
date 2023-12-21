@@ -271,7 +271,7 @@
         
          <!-画面下部のボタンたち>
         <div class="buttons-container">
-			<form action="/rotation" method="get">
+			<form action="/rotation-ytam.onrender.com" method="get">
 				<input type="submit" value="登録画面に戻る">
 			</form>
 			
