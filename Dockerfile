@@ -1,7 +1,14 @@
-FROM maven:3-eclipse-temurin-17 AS build
+# ベースイメージの指定
+FROM tomcat:9-jdk17
+
+# 作業ディレクトリの指定
+WORKDIR /usr/local/tomcat/webapps
+
+# アプリケーションの WAR ファイルをコピー
 COPY . .
-RUN mvn clean package -Dmaven.test.skip=true
-FROM eclipse-temurin:17-alpine
-COPY --from=build /target/demo-0.0.1-SNAPSHOT.jar demo.jar
+
+# ポートのエクスポージャ
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "demo.jar"]
+
+# Tomcat サーバの起動
+CMD ["catalina.sh", "run"]
