@@ -1,0 +1,71 @@
+/* styles.css */
+h1 {
+    position: relative;
+    color: #158b2b;
+    font-size: 1.5rem;
+    padding: 1rem 0;
+    text-align: center;
+    margin: 1.5em 0;
+}
+
+h1:before {
+    content: "";
+    position: absolute;
+    top: -0.5rem;
+    left: 50%;
+    width: 10rem;
+    height: 4.5rem;
+    border-radius: 50%;
+    border: 0.5rem solid #a6ddb0;
+    border-left-color: transparent;
+    border-right-color: transparent;
+    -webkit-transform: translateX(-50%);
+    transform: translateX(-50%);
+}
+
+.btn_30 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    margin: auto;
+    width: 100%;
+    max-width: 20em;
+    height: 4em;
+    color: #ccc;
+    cursor: pointer;
+    transition: all 0.85s cubic-bezier(.17,.67,.14,.93);
+    transform-style: preserve-3d;
+    transform-origin: 100% 50%;
+}
+
+.btn_30:hover {
+    transform: rotateX(-90deg);
+}
+
+.btn_30 .side {
+    box-sizing: border-box;
+    position: absolute;
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+    padding: 1.2rem 4rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.btn_30 .top {
+    background: #b4e12b;
+    color: #fff;
+    transform: rotateX(90deg) translate3d(0, 0, 2em);
+}
+
+.btn_30 .front {
+    background: #27acd9;
+    color: #fff;
+    transform: translate3d(0, 0, 2em);
+}
+
+p {
+    font-size: 0.7em;
+}
