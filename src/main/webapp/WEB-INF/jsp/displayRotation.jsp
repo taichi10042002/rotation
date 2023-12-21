@@ -287,7 +287,7 @@
       						</div>
       						
       					<div class="modal-body">
-      					<form action="/rotation/displayRotation" method="get">
+      					<form action="/rotation-ytam.onrender.com/displayRotation" method="get">
         					<p>サーブ順1：<input type="text" name="name1" value="${name1}"></p>
         					<p>サーブ順2：<input type="text" name="name2" value="${name2}"></p>
         					<p>サーブ順3：<input type="text" name="name3" value="${name3}"></p>

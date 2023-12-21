@@ -85,7 +85,7 @@
     <div class="container text-center">
         <h1 class="my-5">ローテーション自動生成ツール</h1>
 
-        <form id="rotationForm" action="/rotation/displayRotation" method="get">
+        <form id="rotationForm" action="/rotation-ytam.onrender.com/displayRotation" method="get">
             <div class="row justify-content-center">
                 <div class="col-lg-7 col-md-9 col-sm-12">
                     <table class="table">
