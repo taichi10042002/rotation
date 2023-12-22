@@ -168,11 +168,19 @@
         <div id="tableS1">
             <table class="mx-auto">
             
+            	<tr>
+            	<td>　</td>
+            	<td></td>
+            	<td></td>
+            	</tr>
+            	
                 <tr id="front">
                     <td><div class="maru">${name4}</div></td>
                     <td><div class="maru">${name3}</div></td>
                     <td><div class="maru">${name2}</div></td>
                 </tr>
+                
+                
 
                 <tr id="back">
                     <td><div class="maru">${name5}</div></td>
@@ -180,11 +188,24 @@
                     <td><div class="maru">${name1}</div></td>
                 </tr>
                 
+                <tr>
+            	<td></td>
+            	<td></td>
+            	<td>server</td>
+            	</tr>
+                
             </table>
         </div>
 
         <div id="tableS2" style="display: none;">
             <table class="mx-auto">
+            <tr>
+            	<td>　</td>
+            	<td></td>
+            	<td></td>
+            	</tr>
+            	
+            
                 <tr id="front">
                     <td><div class="maru">${name5}</div></td>
                     <td><div class="maru">${name4}</div></td>
@@ -196,11 +217,25 @@
                     <td><div class="maru">${name1}</div></td>
                     <td><div class="maru">${name2}</div></td>
                 </tr>
+                
+                 <tr>
+            	<td></td>
+            	<td></td>
+            	<td>server</td>
+            	</tr>
+            	
             </table>
         </div>
 
         <div id="tableS3" style="display: none;">
             <table class="mx-auto">
+            
+            <tr>
+            	<td>　</td>
+            	<td></td>
+            	<td></td>
+            	</tr>
+            	
                 <tr id="front">
                     <td><div class="maru">${name6}</div></td>
                     <td><div class="maru">${name5}</div></td>
@@ -212,11 +247,25 @@
                     <td><div class="maru">${name2}</div></td>
                     <td><div class="maru">${name3}</div></td>
                 </tr>
+                
+                <tr>
+            	<td></td>
+            	<td></td>
+            	<td>server</td>
+            	</tr>
+            	
             </table>
         </div>
 
         <div id="tableS4" style="display: none;">
             <table class="mx-auto">
+            
+            <tr>
+            	<td>　</td>
+            	<td></td>
+            	<td></td>
+            	</tr>
+            	
                <tr id="front">
                     <td><div class="maru">${name1}</div></td>
                     <td><div class="maru">${name6}</div></td>
@@ -228,11 +277,25 @@
                     <td><div class="maru">${name3}</div></td>
                     <td><div class="maru">${name4}</div></td>
                 </tr>
+                
+                <tr>
+            	<td></td>
+            	<td></td>
+            	<td>server</td>
+            	</tr>
+            	
             </table>
         </div>
 
         <div id="tableS5" style="display: none;">
             <table class="mx-auto">
+            
+            <tr>
+            	<td>　</td>
+            	<td></td>
+            	<td></td>
+            	</tr>
+            	
                 <tr id="front">
                     <td><div class="maru">${name2}</div></td>
                     <td><div class="maru">${name1}</div></td>
@@ -244,11 +307,25 @@
                     <td><div class="maru">${name4}</div></td>
                     <td><div class="maru">${name5}</div></td>
                 </tr>
+                
+                <tr>
+            	<td></td>
+            	<td></td>
+            	<td>server</td>
+            	</tr>
+            	
             </table>
         </div>
 
         <div id="tableS6" style="display: none;">
             <table class="mx-auto">
+            
+            <tr>
+            	<td>　</td>
+            	<td></td>
+            	<td></td>
+            	</tr>
+            	
                 <tr id="front">
                     <td><div class="maru">${name3}</div></td>
                     <td><div class="maru">${name2}</div></td>
@@ -260,6 +337,13 @@
                     <td><div class="maru">${name5}</div></td>
                     <td><div class="maru">${name6}</div></td>
                 </tr>
+                
+                <tr>
+            	<td></td>
+            	<td></td>
+            	<td>server</td>
+            	</tr>
+            	
             </table>
         </div>
 
