@@ -37,11 +37,11 @@ const AVATARS = [
   { id: "raccoon", src: "/pic/icon/アライグマ.png",label: "アライグマ" },
   { id: "frog",    src: "/pic/icon/カエル.png",   label: "カエル" },
   { id: "gorilla", src: "/pic/icon/ゴリラ.png",   label: "ゴリラ" },
-  { id: "elephant",src: "/pic/icon/キツネ.png",     label: "キツネ" },
-  { id: "raccoon", src: "/pic/icon/サル.png",label: "サル" },
-  { id: "frog",    src: "/pic/icon/トナカイ.png",   label: "トナカイ" },
-  { id: "gorilla", src: "/pic/icon/ライオン.png",   label: "ライオン" },
-  { id: "gorilla", src: "/pic/icon/ワニ.png",   label: "ワニ" },
+  { id: "fox",src: "/pic/icon/キツネ.png",     label: "キツネ" },
+  { id: "monkey", src: "/pic/icon/サル.png",label: "サル" },
+  { id: "reindeer",    src: "/pic/icon/トナカイ.png",   label: "トナカイ" },
+  { id: "leon", src: "/pic/icon/ライオン.png",   label: "ライオン" },
+  { id: "crocodile", src: "/pic/icon/ワニ.png",   label: "ワニ" },
 ];
 
 // アバターIDからsrcを取得するヘルパー
