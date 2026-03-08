@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  confirmPasswordReset,
   signOut,
   onAuthStateChanged,
   updateProfile,
@@ -63,9 +65,17 @@ export default function App() {
   const [partnerProfile, setPartnerProfile] = useState(null);
   const [entries, setEntries] = useState([]);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetOobCode, setResetOobCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [showNewPasswordModal, setShowNewPasswordModal] = useState(false);
   const [registerForm, setRegisterForm] = useState({ email: "", password: "", nickname: "", userId: "", avatar: "cat" });
   const [pairSearchId, setPairSearchId] = useState("");
   const [showQrScanner, setShowQrScanner] = useState(false);
+  const myQrCanvasRef = useRef(null);
+  const myQrCanvasRef2 = useRef(null);
   const [pendingPartner, setPendingPartner] = useState(null);
   const [editEntry, setEditEntry] = useState(null); // 修正中のエントリ
   const [deleteEntryId, setDeleteEntryId] = useState(null); // 削除確認中のエントリID // QR読み取り後の確認用
@@ -92,12 +102,17 @@ export default function App() {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
-  // Handle invite link on load
+  // Handle invite link and password reset on load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const inviteId = params.get("invite");
-    if (inviteId) {
-      setPairSearchId(inviteId);
+    if (inviteId) setPairSearchId(inviteId);
+    const mode = params.get("mode");
+    const oobCode = params.get("oobCode");
+    if (mode === "resetPassword" && oobCode) {
+      setResetOobCode(oobCode);
+      setShowNewPasswordModal(true);
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
@@ -205,6 +220,42 @@ export default function App() {
     setLoading(false);
   };
 
+  const handleConfirmPasswordReset = async () => {
+    if (!newPassword) { showToast("新しいパスワードを入力してください", "error"); return; }
+    if (newPassword.length < 6) { showToast("パスワードは6文字以上で入力してください", "error"); return; }
+    if (newPassword !== newPasswordConfirm) { showToast("パスワードが一致しません", "error"); return; }
+    setLoading(true);
+    try {
+      await confirmPasswordReset(auth, resetOobCode, newPassword);
+      showToast("パスワードを変更しました！ログインしてください");
+      setShowNewPasswordModal(false);
+      setNewPassword("");
+      setNewPasswordConfirm("");
+      setPage("login");
+    } catch(e) {
+      showToast("リンクが無効か期限切れです。再度リセットメールを送ってください", "error");
+    }
+    setLoading(false);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetEmail.trim()) { showToast("メールアドレスを入力してください", "error"); return; }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail.trim());
+      showToast("パスワードリセットメールを送りました！");
+      setShowResetPassword(false);
+      setResetEmail("");
+    } catch(e) {
+      if (e.code === "auth/user-not-found") {
+        showToast("このメールアドレスは登録されていません", "error");
+      } else {
+        showToast("送信に失敗しました。もう一度お試しください", "error");
+      }
+    }
+    setLoading(false);
+  };
+
   const handleLogin = async () => {
     if (!loginForm.email || !loginForm.password) { showToast("入力してください", "error"); return; }
     setLoading(true);
@@ -229,6 +280,24 @@ export default function App() {
       streamRef.current = null;
     }
   };
+
+  // QRコードをcanvasに描画
+  const drawQr = (canvasEl, text) => {
+    if (!canvasEl || !text || !window.QRCode) return;
+    try {
+      window.QRCode.toCanvas(canvasEl, text, {
+        width: 200, margin: 2,
+        color: { dark: "#3d3830", light: "#faf8f5" }
+      });
+    } catch(e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    if (!userProfile?.userId) return;
+    const url = `${window.location.origin}?invite=${userProfile.userId}`;
+    if (myQrCanvasRef.current) drawQr(myQrCanvasRef.current, url);
+    if (myQrCanvasRef2.current) drawQr(myQrCanvasRef2.current, url);
+  }, [userProfile?.userId, page]);
 
   // QR読み取り結果処理 → 確認画面へ
   const handleQrResult = async (data) => {
@@ -331,24 +400,43 @@ export default function App() {
     reader.onload = (ev) => {
       const img = new Image();
       img.onload = () => {
+        // 大きい画像はリサイズして精度向上
+        const MAX = 1024;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const w = Math.floor(img.width * scale);
+        const h = Math.floor(img.height * scale);
         const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        if (window.jsQR) {
-          const code = window.jsQR(imageData.data, imageData.width, imageData.height);
-          if (code?.data) { handleQrResultRef.current(code.data); }
-          else { showToast("QRコードが見つかりませんでした", "error"); }
-        } else {
+        ctx.drawImage(img, 0, 0, w, h);
+        const imageData = ctx.getImageData(0, 0, w, h);
+        if (!window.jsQR) {
           showToast("QRライブラリの読み込みに失敗しました", "error");
+          setShowQrScanner(false);
+          return;
         }
+        // 通常・反転・両方の3パターンで試行
+        const attempts = ["dontInvert", "onlyInvert", "attemptBoth"];
+        let found = null;
+        for (const inv of attempts) {
+          const code = window.jsQR(imageData.data, w, h, { inversionAttempts: inv });
+          if (code?.data) { found = code.data; break; }
+        }
+        setShowQrScanner(false);
+        if (found) {
+          handleQrResultRef.current(found);
+        } else {
+          showToast("QRコードが見つかりませんでした", "error");
+        }
+      };
+      img.onerror = () => {
+        showToast("画像の読み込みに失敗しました", "error");
+        setShowQrScanner(false);
       };
       img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
-    setShowQrScanner(false);
   };
 
   const handlePair = async () => {
@@ -886,6 +974,58 @@ export default function App() {
         </div>
       )}
 
+      {/* ===== 新パスワード入力モーダル ===== */}
+      {showNewPasswordModal && (
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <h3 style={{ fontSize:20, fontWeight:800, marginBottom:8, color:"#3d3830" }}>新しいパスワードを設定</h3>
+            <p style={{ fontSize:13, color:"#8a8070", marginBottom:20, lineHeight:1.7 }}>
+              新しいパスワードを入力してください。
+            </p>
+            <div style={{ display:"flex", flexDirection:"column", gap:14, marginBottom:20 }}>
+              <div className="form-field">
+                <label>新しいパスワード</label>
+                <input type="password" placeholder="6文字以上"
+                  value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label>確認用パスワード</label>
+                <input type="password" placeholder="もう一度入力"
+                  value={newPasswordConfirm} onChange={e => setNewPasswordConfirm(e.target.value)} />
+              </div>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <button className="btn-primary" onClick={handleConfirmPasswordReset} disabled={loading}>
+                {loading ? "変更中..." : "パスワードを変更する"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== パスワードリセットモーダル ===== */}
+      {showResetPassword && (
+        <div className="modal-overlay" onClick={() => setShowResetPassword(false)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize:20, fontWeight:800, marginBottom:8, color:"#3d3830" }}>パスワードをリセット</h3>
+            <p style={{ fontSize:13, color:"#8a8070", marginBottom:20, lineHeight:1.7 }}>
+              登録したメールアドレスを入力してください。<br/>リセット用のリンクを送ります。
+            </p>
+            <div className="form-field" style={{ marginBottom:20 }}>
+              <label>メールアドレス</label>
+              <input type="email" placeholder="you@example.com"
+                value={resetEmail} onChange={e => setResetEmail(e.target.value)} />
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <button className="btn-primary" onClick={handleResetPassword} disabled={loading}>
+                {loading ? "送信中..." : "リセットメールを送る"}
+              </button>
+              <button className="btn-ghost" onClick={() => setShowResetPassword(false)}>キャンセル</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ===== QRスキャナーモーダル ===== */}
       {showQrScanner && (
         <div className="modal-overlay" onClick={() => { stopScanner(); setShowQrScanner(false); }}>
@@ -1094,6 +1234,10 @@ export default function App() {
                   <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:8 }}>
                     <button className="btn-primary" onClick={handleLogin} disabled={loading}>{loading?"...":"ログイン"}</button>
                     <button className="btn-ghost" onClick={() => setPage("register")}>新規登録</button>
+                    <button type="button" onClick={() => { setResetEmail(loginForm.email); setShowResetPassword(true); }} style={{
+                      background:"none", border:"none", color:"#9a9080",
+                      fontSize:13, cursor:"pointer", padding:"4px 0", textDecoration:"underline",
+                    }}>パスワードを忘れた場合</button>
                   </div>
                 </div>
                 {/* iPhone PWA hint */}
@@ -1202,9 +1346,7 @@ export default function App() {
                       <div style={{ textAlign:"center" }}>
                         <p style={{ fontSize:13, color:"#8a8070", marginBottom:12 }}>相手にこのQRコードを読み取ってもらう</p>
                         <div style={{ display:"flex", justifyContent:"center", marginBottom:12 }}>
-                          <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.origin + "?invite=" + userProfile.userId)}&bgcolor=faf8f5&color=3d3830&margin=2`}
-                            alt="招待QRコード"
+                          <canvas ref={myQrCanvasRef}
                             style={{ width:200, height:200, borderRadius:12, border:"1.5px solid #e8e2d9" }}
                           />
                         </div>
