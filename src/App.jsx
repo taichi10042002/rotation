@@ -37,7 +37,6 @@ const AVATARS = [
   { id: "raccoon", src: "/pic/icon/アライグマ.png",label: "アライグマ" },
   { id: "frog",    src: "/pic/icon/カエル.png",   label: "カエル" },
   { id: "gorilla", src: "/pic/icon/ゴリラ.png",   label: "ゴリラ" },
-  { id: "gorilla", src: "/pic/icon/パンダ.png",   label: "パンダ" },
   { id: "elephant",src: "/pic/icon/キツネ.png",     label: "キツネ" },
   { id: "raccoon", src: "/pic/icon/サル.png",label: "サル" },
   { id: "frog",    src: "/pic/icon/トナカイ.png",   label: "トナカイ" },
