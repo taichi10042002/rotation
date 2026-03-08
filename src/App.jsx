@@ -37,6 +37,12 @@ const AVATARS = [
   { id: "raccoon", src: "/pic/icon/アライグマ.png",label: "アライグマ" },
   { id: "frog",    src: "/pic/icon/カエル.png",   label: "カエル" },
   { id: "gorilla", src: "/pic/icon/ゴリラ.png",   label: "ゴリラ" },
+  { id: "gorilla", src: "/pic/icon/パンダ.png",   label: "パンダ" },
+  { id: "elephant",src: "/pic/icon/キツネ.png",     label: "キツネ" },
+  { id: "raccoon", src: "/pic/icon/サル.png",label: "サル" },
+  { id: "frog",    src: "/pic/icon/トナカイ.png",   label: "トナカイ" },
+  { id: "gorilla", src: "/pic/icon/ライオン.png",   label: "ライオン" },
+  { id: "gorilla", src: "/pic/icon/ワニ.png",   label: "ワニ" },
 ];
 
 // アバターIDからsrcを取得するヘルパー
@@ -843,7 +849,7 @@ export default function App() {
                   onChange={e => setEditEntry({...editEntry, account: e.target.value})} />
               </div>
               <div className="form-field">
-                <label>金額（円）</label>
+                <label>相手に請求する金額（円）</label>
                 <input type="number" placeholder="例：1500"
                   value={editEntry.amount}
                   onChange={e => setEditEntry({...editEntry, amount: e.target.value})} />
@@ -1360,7 +1366,7 @@ export default function App() {
                         value={form.account} onChange={e => setForm({...form, account:e.target.value})} />
                     </div>
                     <div className="form-field">
-                      <label>金額（円）</label>
+                      <label>相手に請求する金額（円）</label>
                       <input type="number" placeholder="0" value={form.amount}
                         onChange={e => setForm({...form, amount:e.target.value})} />
                     </div>
