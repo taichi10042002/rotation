@@ -1,0 +1,20 @@
+{
+    "name": "niwari",
+    "short_name": "niwari",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f5f2ee",
+    "theme_color": "#f5f2ee",
+    "icons": [
+        {
+            "src": "/pic/fav.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/pic/fav.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

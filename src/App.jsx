@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -59,7 +60,9 @@ const generateUserId = () => {
 };
 
 export default function App() {
-  const [page, setPage] = useState("login");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const page = location.pathname.replace("/", "") || "login";
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [partnerProfile, setPartnerProfile] = useState(null);
@@ -104,7 +107,7 @@ export default function App() {
 
   // Handle invite link and password reset on load
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.search);
     const inviteId = params.get("invite");
     if (inviteId) setPairSearchId(inviteId);
     const mode = params.get("mode");
@@ -125,15 +128,15 @@ export default function App() {
         if (profile?.pairedWith) {
           const partner = await fetchUserProfile(profile.pairedWith);
           setPartnerProfile(partner);
-          setPage("home");
+          navigate("/home");
         } else {
-          setPage("pair");
+          navigate("/pair");
         }
       } else {
         setCurrentUser(null);
         setUserProfile(null);
         setPartnerProfile(null);
-        setPage("login");
+        navigate("/login");
       }
     });
     return () => unsub();
@@ -231,7 +234,7 @@ export default function App() {
       setShowNewPasswordModal(false);
       setNewPassword("");
       setNewPasswordConfirm("");
-      setPage("login");
+      navigate("/login");
     } catch(e) {
       showToast("リンクが無効か期限切れです。再度リセットメールを送ってください", "error");
     }
@@ -384,7 +387,7 @@ export default function App() {
       setPartnerProfile(pendingPartner);
       setUserProfile(prev => ({ ...prev, pairedWith: pendingPartner.uid }));
       setPendingPartner(null);
-      setPage("home");
+      navigate("/home");
       showToast(`${pendingPartner.nickname} さんとペアになりました！`);
     } catch(e) {
       showToast(e.message, "error");
@@ -456,7 +459,7 @@ export default function App() {
       setUserProfile(profile);
       setPartnerProfile(partner);
       showToast(`${partner.nickname} さんとペアになりました！`);
-      setPage("home");
+      navigate("/home");
     } catch (e) {
       showToast(e.message, "error");
     }
@@ -527,7 +530,7 @@ export default function App() {
       const profile = await fetchUserProfile(currentUser.uid);
       setUserProfile(profile);
       showToast("ペアを解消しました");
-      setPage("pair");
+      navigate("/pair");
     } catch (e) {
       showToast(e.message, "error");
     }
@@ -1233,7 +1236,7 @@ export default function App() {
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:8 }}>
                     <button className="btn-primary" onClick={handleLogin} disabled={loading}>{loading?"...":"ログイン"}</button>
-                    <button className="btn-ghost" onClick={() => setPage("register")}>新規登録</button>
+                    <button className="btn-ghost" onClick={() => navigate("/register")}>新規登録</button>
                     <button type="button" onClick={() => { setResetEmail(loginForm.email); setShowResetPassword(true); }} style={{
                       background:"none", border:"none", color:"#9a9080",
                       fontSize:13, cursor:"pointer", padding:"4px 0", textDecoration:"underline",
@@ -1265,7 +1268,7 @@ export default function App() {
             {/* REGISTER */}
             {page === "register" && (
               <>
-                <button onClick={() => setPage("login")} style={{
+                <button onClick={() => navigate("/login")} style={{
                   background:"none", border:"none", color:"#8a8070",
                   fontSize:14, cursor:"pointer", marginBottom:24, padding:0,
                 }}>← 戻る</button>
