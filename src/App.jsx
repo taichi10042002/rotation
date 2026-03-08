@@ -61,6 +61,9 @@ const generateUserId = () => {
 
 export default function App() {
   const navigate = useNavigate();
+  const [progress, setProgress] = useState(0);
+  const [showProgress, setShowProgress] = useState(false);
+  const progressTimer = useRef(null);
   const location = useLocation();
   const page = location.pathname.replace("/", "") || "login";
   const [currentUser, setCurrentUser] = useState(null);
@@ -201,11 +204,11 @@ export default function App() {
     if (!registerForm.email || !registerForm.password || !registerForm.nickname) {
       showToast("ニックネーム・メール・パスワードを入力してください", "error"); return;
     }
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       const finalUserId = registerForm.userId.trim() !== "" ? registerForm.userId.trim() : previewId;
       const idCheck = await getDocs(query(collection(db, "users"), where("userId", "==", finalUserId)));
-      if (!idCheck.empty) { showToast("このユーザーIDは既に使われています", "error"); setLoading(false); return; }
+      if (!idCheck.empty) { showToast("このユーザーIDは既に使われています", "error"); stopProgress(); setLoading(false); return; }
       const cred = await createUserWithEmailAndPassword(auth, registerForm.email, registerForm.password);
       await updateProfile(cred.user, { displayName: registerForm.nickname });
       await setDoc(doc(db, "users", cred.user.uid), {
@@ -220,14 +223,14 @@ export default function App() {
     } catch (e) {
       showToast(e.code === "auth/email-already-in-use" ? "このメールは既に登録済みです" : e.message, "error");
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   const handleConfirmPasswordReset = async () => {
     if (!newPassword) { showToast("新しいパスワードを入力してください", "error"); return; }
     if (newPassword.length < 6) { showToast("パスワードは6文字以上で入力してください", "error"); return; }
     if (newPassword !== newPasswordConfirm) { showToast("パスワードが一致しません", "error"); return; }
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       await confirmPasswordReset(auth, resetOobCode, newPassword);
       showToast("パスワードを変更しました！ログインしてください");
@@ -238,12 +241,29 @@ export default function App() {
     } catch(e) {
       showToast("リンクが無効か期限切れです。再度リセットメールを送ってください", "error");
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
+  };
+
+  const startProgress = () => {
+    setProgress(0);
+    setShowProgress(true);
+    let val = 0;
+    progressTimer.current = setInterval(() => {
+      val += Math.random() * 15;
+      if (val >= 90) { val = 90; clearInterval(progressTimer.current); }
+      setProgress(val);
+    }, 150);
+  };
+
+  const stopProgress = () => {
+    clearInterval(progressTimer.current);
+    setProgress(100);
+    setTimeout(() => setShowProgress(false), 400);
   };
 
   const handleResetPassword = async () => {
     if (!resetEmail.trim()) { showToast("メールアドレスを入力してください", "error"); return; }
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       await sendPasswordResetEmail(auth, resetEmail.trim());
       showToast("パスワードリセットメールを送りました！");
@@ -256,19 +276,21 @@ export default function App() {
         showToast("送信に失敗しました。もう一度お試しください", "error");
       }
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   const handleLogin = async () => {
     if (!loginForm.email || !loginForm.password) { showToast("入力してください", "error"); return; }
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       await signInWithEmailAndPassword(auth, loginForm.email, loginForm.password);
+      stopProgress();
       showToast("ログインしました");
     } catch (e) {
+      stopProgress();
       showToast("メールまたはパスワードが違います", "error");
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   // QRスキャナー停止
@@ -310,20 +332,20 @@ export default function App() {
       const url = new URL(data);
       const inviteId = url.searchParams.get("invite");
       if (!inviteId) { showToast("niwariの招待QRコードではありません", "error"); return; }
-      setLoading(true);
+      setLoading(true); startProgress();
       const q = query(collection(db, "users"), where("userId", "==", inviteId.trim()));
       const snap = await getDocs(q);
-      if (snap.empty) { showToast("ユーザーが見つかりません", "error"); setLoading(false); return; }
+      if (snap.empty) { showToast("ユーザーが見つかりません", "error"); stopProgress(); setLoading(false); return; }
       const partnerDoc = snap.docs[0];
       if (partnerDoc.id === currentUserRef.current?.uid) {
-        showToast("自分自身とはペアになれません", "error"); setLoading(false); return;
+        showToast("自分自身とはペアになれません", "error"); stopProgress(); setLoading(false); return;
       }
       setPendingPartner({ uid: partnerDoc.id, ...partnerDoc.data() });
-      setLoading(false);
+      stopProgress(); setLoading(false);
     } catch(e) {
       console.error(e);
       showToast("QRコードを読み取れませんでした", "error");
-      setLoading(false);
+      stopProgress(); setLoading(false);
     }
   };
 
@@ -378,7 +400,7 @@ export default function App() {
   // 確認後にペア登録
   const handleConfirmPair = async () => {
     if (!pendingPartner) return;
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       const batch = writeBatch(db);
       batch.update(doc(db, "users", currentUser.uid), { pairedWith: pendingPartner.uid });
@@ -392,7 +414,7 @@ export default function App() {
     } catch(e) {
       showToast(e.message, "error");
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   // ファイルからQR読み取り
@@ -444,14 +466,14 @@ export default function App() {
 
   const handlePair = async () => {
     if (!pairSearchId.trim()) { showToast("ユーザーIDを入力してください", "error"); return; }
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       const q = query(collection(db, "users"), where("userId", "==", pairSearchId.trim()));
       const snap = await getDocs(q);
-      if (snap.empty) { showToast("ユーザーが見つかりません", "error"); setLoading(false); return; }
+      if (snap.empty) { showToast("ユーザーが見つかりません", "error"); stopProgress(); setLoading(false); return; }
       const partnerDoc = snap.docs[0];
       const partnerId = partnerDoc.id;
-      if (partnerId === currentUser.uid) { showToast("自分自身とはペアになれません", "error"); setLoading(false); return; }
+      if (partnerId === currentUser.uid) { showToast("自分自身とはペアになれません", "error"); stopProgress(); setLoading(false); return; }
       await setDoc(doc(db, "users", currentUser.uid), { pairedWith: partnerId }, { merge: true });
       await setDoc(doc(db, "users", partnerId), { pairedWith: currentUser.uid }, { merge: true });
       const profile = await fetchUserProfile(currentUser.uid);
@@ -463,14 +485,14 @@ export default function App() {
     } catch (e) {
       showToast(e.message, "error");
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   const handleAdd = async () => {
     if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0) {
       showToast("正しい金額を入力してください", "error"); return;
     }
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       const uids = [currentUser.uid, userProfile.pairedWith].sort();
       const pairId = uids.join("_");
@@ -491,15 +513,15 @@ export default function App() {
     } catch (e) {
       showToast(e.message, "error");
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   // Mark all unsettled entries as settled
   const handleSettle = async () => {
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       const unsettled = entries.filter(e => !e.settled);
-      if (unsettled.length === 0) { showToast("精算する記帳がありません", "error"); setLoading(false); return; }
+      if (unsettled.length === 0) { showToast("精算する記帳がありません", "error"); stopProgress(); setLoading(false); return; }
       const batch = writeBatch(db);
       const now = Timestamp.now();
       unsettled.forEach(e => {
@@ -511,12 +533,12 @@ export default function App() {
     } catch (e) {
       showToast(e.message, "error");
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   // Unpair both users
   const handleUnpair = async () => {
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       const batch = writeBatch(db);
       batch.update(doc(db, "users", currentUser.uid), { pairedWith: null });
@@ -534,7 +556,7 @@ export default function App() {
     } catch (e) {
       showToast(e.message, "error");
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   const openProfile = () => {
@@ -545,12 +567,12 @@ export default function App() {
   const handleSaveProfile = async () => {
     if (!editForm.nickname.trim()) { showToast("ニックネームを入力してください", "error"); return; }
     if (!editForm.userId.trim()) { showToast("ユーザーIDを入力してください", "error"); return; }
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       // Check userId uniqueness if changed
       if (editForm.userId.trim() !== userProfile.userId) {
         const idCheck = await getDocs(query(collection(db, "users"), where("userId", "==", editForm.userId.trim())));
-        if (!idCheck.empty) { showToast("このユーザーIDは既に使われています", "error"); setLoading(false); return; }
+        if (!idCheck.empty) { showToast("このユーザーIDは既に使われています", "error"); stopProgress(); setLoading(false); return; }
       }
       await setDoc(doc(db, "users", currentUser.uid), {
         nickname: editForm.nickname.trim(),
@@ -562,7 +584,7 @@ export default function App() {
     } catch (e) {
       showToast(e.message, "error");
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   const handleSaveAvatar = async (emoji) => {
@@ -581,7 +603,7 @@ export default function App() {
   const handleContact = async () => {
     if (!contactForm.email.trim()) { showToast("メールアドレスを入力してください", "error"); return; }
     if (!contactForm.message.trim()) { showToast("お問い合わせ内容を入力してください", "error"); return; }
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       await addDoc(collection(db, "contacts"), {
         type: contactForm.type,
@@ -596,12 +618,12 @@ export default function App() {
     } catch (e) {
       showToast(e.message, "error");
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "削除") { showToast("「削除」と入力してください", "error"); return; }
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       const uid = currentUser.uid;
       // ペア相手のpairedWithをnullに
@@ -628,14 +650,14 @@ export default function App() {
         showToast(e.message, "error");
       }
     }
-    setLoading(false);
+    stopProgress(); setLoading(false);
     setShowDeleteAccount(false);
   };
 
   const handleEditEntry = async () => {
     if (!editEntry.account.trim()) { showToast("科目を入力してください", "error"); return; }
     if (!editEntry.amount || isNaN(editEntry.amount)) { showToast("金額を入力してください", "error"); return; }
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       await setDoc(doc(db, "entries", editEntry.id), {
         account: editEntry.account.trim(),
@@ -649,19 +671,19 @@ export default function App() {
       setEditEntry(null);
       showToast("修正しました");
     } catch(e) { showToast(e.message, "error"); }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   const handleDeleteEntry = async () => {
     if (!deleteEntryId) return;
-    setLoading(true);
+    setLoading(true); startProgress();
     try {
       await deleteDoc(doc(db, "entries", deleteEntryId));
       setEntries(prev => prev.filter(e => e.id !== deleteEntryId));
       setDeleteEntryId(null);
       showToast("削除しました");
     } catch(e) { showToast(e.message, "error"); }
-    setLoading(false);
+    stopProgress(); setLoading(false);
   };
 
   const handleLogout = async () => {
@@ -678,6 +700,21 @@ export default function App() {
 
   return (
     <>
+      {showProgress && (
+        <div style={{
+          position:"fixed", top:0, left:0, right:0, zIndex:9999,
+          height:3, pointerEvents:"none",
+        }}>
+          <div style={{
+            height:"100%",
+            width:`${progress}%`,
+            background:"linear-gradient(90deg,#7a9e7e,#5d8a62)",
+            borderRadius:"0 2px 2px 0",
+            transition:"width 0.2s ease",
+            boxShadow:"0 0 8px rgba(93,138,98,0.5)",
+          }} />
+        </div>
+      )}
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body, #root {
@@ -706,6 +743,23 @@ export default function App() {
         }
         .btn-primary:hover { opacity:0.88; }
         .btn-primary:disabled { opacity:0.5; cursor:not-allowed; }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        .spinner {
+          display: inline-block;
+          width: 18px; height: 18px;
+          border: 2.5px solid rgba(255,255,255,0.4);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+          vertical-align: middle;
+          margin-right: 8px;
+        }
+        .btn-ghost .spinner {
+          border-color: rgba(93,138,98,0.3);
+          border-top-color: #5d8a62;
+        }
         .btn-ghost {
           background:#f5f2ee; border:1px solid #ddd8cf;
           color:#3d3830; border-radius:12px; padding:13px 24px; font-size:15px; font-weight:600;
@@ -1235,7 +1289,7 @@ export default function App() {
                       value={loginForm.password} onChange={e => setLoginForm({...loginForm, password:e.target.value})} />
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:8 }}>
-                    <button className="btn-primary" onClick={handleLogin} disabled={loading}>{loading?"...":"ログイン"}</button>
+                    <button className="btn-primary" onClick={handleLogin} disabled={loading}>{loading ? <><span className="spinner"/>"ログイン中..."</> : "ログイン"}</button>
                     <button className="btn-ghost" onClick={() => navigate("/register")}>新規登録</button>
                     <button type="button" onClick={() => { setResetEmail(loginForm.email); setShowResetPassword(true); }} style={{
                       background:"none", border:"none", color:"#9a9080",
@@ -1325,7 +1379,7 @@ export default function App() {
                       value={registerForm.password} onChange={e => setRegisterForm({...registerForm, password:e.target.value})} />
                   </div>
                   <button className="btn-primary" style={{ marginTop:8 }} onClick={handleRegister} disabled={loading}>
-                    {loading?"...":"登録する"}
+                    {loading ? <><span className="spinner"/>登録中...</> : "登録する"}
                   </button>
                 </div>
               </>
