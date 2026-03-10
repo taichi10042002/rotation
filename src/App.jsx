@@ -106,6 +106,7 @@ export default function App() {
   const [contactForm, setContactForm] = useState({ type: "バグ報告", email: "", message: "" });
   const [contactSent, setContactSent] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   // Handle invite link and password reset on load
@@ -1688,6 +1689,39 @@ export default function App() {
         </div>
       )}
 
+      {/* ===== プライバシーポリシーモーダル ===== */}
+      {showPrivacyPolicy && (
+        <div className="modal-overlay" onClick={() => setShowPrivacyPolicy(false)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxHeight:"80vh", overflowY:"auto" }}>
+            <h3 style={{ fontSize:20, fontWeight:800, marginBottom:20, color:"#3d3830" }}>プライバシーポリシー</h3>
+            <div style={{ fontSize:13, color:"#5a5248", lineHeight:1.9, display:"flex", flexDirection:"column", gap:16 }}>
+              <div>
+                <p style={{ fontWeight:700, marginBottom:6, color:"#3d3830" }}>1. 収集する情報</p>
+                <p>本アプリでは、サービス提供のためにメールアドレス・ニックネーム・ユーザーID・記帳データを収集・保存します。これらはFirebase（Google LLC）のサーバーに保存されます。</p>
+              </div>
+              <div>
+                <p style={{ fontWeight:700, marginBottom:6, color:"#3d3830" }}>2. 情報の利用目的</p>
+                <p>収集した情報はアカウント管理・ペア機能・記帳機能の提供のみに使用します。第三者への販売・提供は行いません。</p>
+              </div>
+              <div>
+                <p style={{ fontWeight:700, marginBottom:6, color:"#3d3830" }}>3. 広告について</p>
+                <p>本アプリでは忍者AdMaxによる広告を表示しています。広告配信のためにCookieが使用される場合があります。</p>
+              </div>
+              <div>
+                <p style={{ fontWeight:700, marginBottom:6, color:"#3d3830" }}>4. データの保管・削除</p>
+                <p>精算済みの記帳データは6ヶ月後に自動削除されます。アカウント削除時はすべてのデータが削除されます。</p>
+              </div>
+              <div>
+                <p style={{ fontWeight:700, marginBottom:6, color:"#3d3830" }}>5. お問い合わせ</p>
+                <p>プライバシーに関するご質問は<a href="https://forms.gle/jsdKFSGNTmLPfNyj6" target="_blank" rel="noreferrer" style={{ color:"#5d8a62" }}>お問い合わせフォーム</a>よりご連絡ください。</p>
+              </div>
+              <p style={{ fontSize:12, color:"#9a9080" }}>最終更新：2026年3月</p>
+            </div>
+            <button className="btn-ghost" style={{ marginTop:20 }} onClick={() => setShowPrivacyPolicy(false)}>閉じる</button>
+          </div>
+        </div>
+      )}
+
       {/* ===== フッター ===== */}
       {page === "home" && (
         <div style={{
@@ -1720,6 +1754,11 @@ export default function App() {
               fontSize:12, color:"#8a8070", textDecoration:"none",
               borderBottom:"1px solid #ddd8cf", paddingBottom:1, flexShrink:0,
             }}>お問い合わせ</a>
+            <button type="button" onClick={() => setShowPrivacyPolicy(true)} style={{
+              fontSize:12, color:"#8a8070", background:"none", border:"none",
+              borderBottom:"1px solid #ddd8cf", paddingBottom:1,
+              cursor:"pointer", flexShrink:0,
+            }}>プライバシーポリシー</button>
           </div>
         </div>
       )}
