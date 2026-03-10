@@ -2,28 +2,32 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
     <!-- ===== SEO基本 ===== -->
-    <title>niwari | カップル・夫婦の割り勘・家計簿アプリ</title>
-    <meta name="description" content="niwariはカップル・夫婦・同棲カップル向けの割り勘・共有家計簿アプリです。ふたりの支出を記録して差額を自動計算。精算がかんたんになります。" />
-    <meta name="keywords" content="カップル 割り勘, 夫婦 家計簿, 同棲 お金管理, カップル 共有 家計簿, 割り勘 アプリ, 夫婦 支出 管理, カップル 精算, ふたり 家計簿, 同棲 割り勘, niwari" />
+    <title>niwari | カップル・夫婦の割り勘アプリ。立て替え記録で催促なし。</title>
+    <meta name="description" content="「昨日のランチ代、まだ貰ってない…」なんて言わなくて大丈夫。カップル・夫婦・同棲カップル向け割り勘記録アプリ『niwari』。立て替えをその場で記録して精算をスマートに。催促の気まずさをなくして二人の時間を楽しもう。無料で使えるWebアプリ。" />
+    <meta name="keywords" content="カップル 割り勘, 夫婦 家計簿, 同棲 お金管理, 割り勘アプリ, カップル 立て替え, 精算アプリ, 夫婦 支出管理, ふたり 家計簿, 同棲 割り勘, カップル 共有 家計簿, niwari, にわり" />
     <meta name="author" content="niwari" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://niwari-web.com/" />
 
     <!-- ===== OGP（SNSシェア用） ===== -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="niwari | カップル・夫婦の割り勘・家計簿アプリ" />
-    <meta property="og:description" content="ふたりの支出を記録して差額を自動計算。カップル・夫婦・同棲カップル向けの割り勘管理アプリです。" />
+    <meta property="og:title" content="niwari | カップル・夫婦の割り勘アプリ。立て替え記録で催促なし。" />
+    <meta property="og:description" content="「昨日のランチ代、まだ貰ってない…」なんて言わなくて大丈夫。立て替えをその場で記録して精算をスマートに。催促の気まずさをなくして二人の時間を楽しもう。" />
     <meta property="og:url" content="https://niwari-web.com/" />
     <meta property="og:site_name" content="niwari" />
     <meta property="og:locale" content="ja_JP" />
+    <meta property="og:image" content="https://niwari-web.com/pic/ogp.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <!-- ===== Twitter Card ===== -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="niwari | カップル・夫婦の割り勘・家計簿アプリ" />
-    <meta name="twitter:description" content="ふたりの支出を記録して差額を自動計算。カップル・夫婦・同棲カップル向けの割り勘管理アプリです。" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="niwari | カップル・夫婦の割り勘記録アプリ。立て替え記録で催促なし。" />
+    <meta name="twitter:description" content="「昨日のランチ代、まだ貰ってない…」なんて言わなくて大丈夫。立て替えをその場で記録して精算をスマートに。催促の気まずさをなくして二人の時間を楽しもう。" />
+    <meta name="twitter:image" content="https://niwari-web.com/pic/ogp.png" />
 
     <!-- ===== PWA・モバイル対応 ===== -->
     <meta name="theme-color" content="#f5f2ee" />
@@ -31,6 +35,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="niwari" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="/pic/fav.png" />
+    <link rel="shortcut icon" href="/pic/fav.png" />
     <link rel="apple-touch-icon" href="/pic/apple-touch-icon.png" />
 
     <!-- ===== 構造化データ（JSON-LD） ===== -->
@@ -39,45 +45,29 @@
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "niwari",
-      "description": "カップル・夫婦・同棲カップル向けの割り勘・共有家計簿アプリ。ふたりの支出を記録して差額を自動計算します。",
+      "alternateName": "にわり",
+      "description": "カップル・夫婦・同棲カップル向けの割り勘記録アプリ。立て替えをその場で記録して差額を自動計算。催促なしで精算をスマートに。",
       "url": "https://niwari-web.com/",
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "Web, iOS, Android",
+      "browserRequirements": "Requires JavaScript",
+      "inLanguage": "ja",
       "offers": {
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "JPY"
       },
-      "inLanguage": "ja"
+      "audience": {
+        "@type": "Audience",
+        "audienceType": "カップル・夫婦・同棲カップル"
+      }
     }
     </script>
 
-    <link rel="icon" type="image/png" href="/pic/fav.png" />
-    <link rel="shortcut icon" href="/pic/fav.png" />
-    <!-- qrcode.js -->
+    <!-- ===== 外部スクリプト ===== -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-    <!-- qrcode.js -->
-    <!-- jsQR -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <!-- qrcode.js -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-    <!-- qrcode.js -->
-    <!-- jsQR -->
-    <!-- admax -->
-    <script src="https://adm.shinobi.jp/s/ecdf553ddecaf27a37302364980b0a7a" async></script>
-    <!-- qrcode.js -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-    <!-- qrcode.js -->
-    <!-- jsQR -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <!-- qrcode.js -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-    <!-- qrcode.js -->
-    <!-- jsQR -->
-    <!-- admax -->
-      <meta property="og:image" content="https://niwari-web.com/pic/fav.png" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:image" content="https://niwari-web.com/pic/fav.png" />
+
   </head>
   <body>
     <div id="root"></div>
