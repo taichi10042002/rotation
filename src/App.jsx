@@ -91,6 +91,7 @@ export default function App() {
   const [previewId, setPreviewId] = useState(generateUserId());
   const [showSettleConfirm, setShowSettleConfirm] = useState(false);
   const [showUnpairConfirm, setShowUnpairConfirm] = useState(false);
+  const [showUnpairRequest, setShowUnpairRequest] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -445,7 +446,7 @@ export default function App() {
     if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0) {
       showToast("正しい金額を入力してください", "error"); return;
     }
-    setLoading(true); startProgress();
+setLoading(true); startProgress();
     try {
       const uids = [currentUser.uid, userProfile.pairedWith].sort();
       const pairId = uids.join("_");
@@ -471,7 +472,7 @@ export default function App() {
 
   // Mark all unsettled entries as settled
   const handleSettle = async () => {
-    setLoading(true); startProgress();
+setLoading(true); startProgress();
     try {
       const unsettled = entries.filter(e => !e.settled);
       if (unsettled.length === 0) { showToast("精算する記帳がありません", "error"); stopProgress(); setLoading(false); return; }
@@ -490,18 +491,48 @@ export default function App() {
   };
 
   // Unpair both users
+  // ペア解消申請
+  const handleUnpairRequest = async () => {
+    setLoading(true); startProgress();
+    try {
+      await setDoc(doc(db, "users", currentUser.uid), { unpairRequest: true }, { merge: true });
+      await setDoc(doc(db, "users", userProfile.pairedWith), { unpairRequestFrom: currentUser.uid }, { merge: true });
+      setUserProfile(prev => ({ ...prev, unpairRequest: true }));
+      setShowUnpairConfirm(false);
+      showToast("ペア解消を申請しました");
+    } catch (e) {
+      showToast(e.message, "error");
+    }
+    stopProgress(); setLoading(false);
+  };
+
+  // ペア解消申請キャンセル
+  const handleUnpairRequestCancel = async () => {
+    setLoading(true); startProgress();
+    try {
+      await setDoc(doc(db, "users", currentUser.uid), { unpairRequest: false }, { merge: true });
+      await setDoc(doc(db, "users", userProfile.pairedWith), { unpairRequestFrom: null }, { merge: true });
+      setUserProfile(prev => ({ ...prev, unpairRequest: false }));
+      showToast("ペア解消の申請を取り消しました");
+    } catch (e) {
+      showToast(e.message, "error");
+    }
+    stopProgress(); setLoading(false);
+  };
+
+  // ペア解消承認
   const handleUnpair = async () => {
     setLoading(true); startProgress();
     try {
       const batch = writeBatch(db);
-      batch.update(doc(db, "users", currentUser.uid), { pairedWith: null });
+      batch.update(doc(db, "users", currentUser.uid), { pairedWith: null, unpairRequest: false, unpairRequestFrom: null });
       if (userProfile?.pairedWith) {
-        batch.update(doc(db, "users", userProfile.pairedWith), { pairedWith: null });
+        batch.update(doc(db, "users", userProfile.pairedWith), { pairedWith: null, unpairRequest: false, unpairRequestFrom: null });
       }
       await batch.commit();
       setPartnerProfile(null);
       setEntries([]);
-      setShowUnpairConfirm(false);
+      setShowUnpairRequest(false);
       const profile = await fetchUserProfile(currentUser.uid);
       setUserProfile(profile);
       showToast("ペアを解消しました");
@@ -520,7 +551,7 @@ export default function App() {
   const handleSaveProfile = async () => {
     if (!editForm.nickname.trim()) { showToast("ニックネームを入力してください", "error"); return; }
     if (!editForm.userId.trim()) { showToast("ユーザーIDを入力してください", "error"); return; }
-    setLoading(true); startProgress();
+setLoading(true); startProgress();
     try {
       // Check userId uniqueness if changed
       if (editForm.userId.trim() !== userProfile.userId) {
@@ -541,7 +572,7 @@ export default function App() {
   };
 
   const handleSaveAvatar = async (emoji) => {
-    try {
+try {
       await setDoc(doc(db, "users", currentUser.uid), { avatar: emoji }, { merge: true });
       setUserProfile(prev => ({ ...prev, avatar: emoji }));
       // Also update entries in memory to reflect new avatar
@@ -629,7 +660,7 @@ export default function App() {
 
   const handleDeleteEntry = async () => {
     if (!deleteEntryId) return;
-    setLoading(true); startProgress();
+setLoading(true); startProgress();
     try {
       await deleteDoc(doc(db, "entries", deleteEntryId));
       setEntries(prev => prev.filter(e => e.id !== deleteEntryId));
@@ -827,23 +858,43 @@ export default function App() {
         </div>
       )}
 
-      {/* ===== ペア解消確認モーダル ===== */}
+      {/* ===== ペア解消申請モーダル ===== */}
       {showUnpairConfirm && (
         <div className="modal-overlay" onClick={() => setShowUnpairConfirm(false)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
             <div style={{ textAlign:"center", marginBottom:24 }}>
-              
               <h3 style={{ fontSize:22, fontWeight:800, marginBottom:10 }}>ペアを解消しますか？</h3>
               <p style={{ color:"#8a8070", fontSize:14, lineHeight:1.6 }}>
-                <strong style={{color:"#3d3830"}}>{partnerProfile?.nickname}</strong> さんとのペアを解除します。<br/>
-                記帳データは削除されません。
+                <strong style={{color:"#3d3830"}}>{partnerProfile?.nickname}</strong> さんに解消申請を送ります。<br/>
+                相手が承認するとペアが解消されます。
+              </p>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <button className="btn-danger" onClick={handleUnpairRequest} disabled={loading}>
+                {loading ? "処理中..." : "解消を申請する"}
+              </button>
+              <button className="btn-ghost" onClick={() => setShowUnpairConfirm(false)}>キャンセル</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== ペア解消承認モーダル ===== */}
+      {showUnpairRequest && (
+        <div className="modal-overlay" onClick={() => setShowUnpairRequest(false)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign:"center", marginBottom:24 }}>
+              <h3 style={{ fontSize:20, fontWeight:800, marginBottom:10, color:"#c94f4f" }}>ペア解消の申請が届いています</h3>
+              <p style={{ color:"#8a8070", fontSize:14, lineHeight:1.6 }}>
+                <strong style={{color:"#3d3830"}}>{partnerProfile?.nickname}</strong> さんがペアの解消を申請しています。<br/>
+                承認するとペアが解消されます。
               </p>
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
               <button className="btn-danger" onClick={handleUnpair} disabled={loading}>
-                {loading ? "処理中..." : "ペアを解消する"}
+                {loading ? "処理中..." : "承認してペアを解消する"}
               </button>
-              <button className="btn-ghost" onClick={() => setShowUnpairConfirm(false)}>キャンセル</button>
+              <button className="btn-ghost" onClick={() => setShowUnpairRequest(false)}>閉じる</button>
             </div>
           </div>
         </div>
@@ -1428,7 +1479,20 @@ export default function App() {
               </div>
             )}
           </div>
-
+          {/* ペア解消申請中バナー */}
+          {userProfile?.unpairRequest && (
+            <div style={{ background:"#fff3cd", borderBottom:"1px solid #ffc107", padding:"10px 20px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <p style={{ fontSize:13, color:"#856404" }}>ペア解消を申請中です。相手の承認をお待ちください。</p>
+              <button onClick={handleUnpairRequestCancel} style={{ fontSize:12, color:"#856404", background:"none", border:"1px solid #ffc107", borderRadius:6, padding:"4px 10px", cursor:"pointer" }}>取り消す</button>
+            </div>
+          )}
+          {/* 相手からのペア解消申請バナー */}
+          {userProfile?.unpairRequestFrom && userProfile.unpairRequestFrom !== currentUser?.uid && (
+            <div style={{ background:"#fde8e8", borderBottom:"1px solid #c94f4f", padding:"10px 20px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <p style={{ fontSize:13, color:"#c94f4f" }}><strong>{partnerProfile?.nickname}</strong> さんがペアの解消を申請しています。</p>
+              <button onClick={() => setShowUnpairRequest(true)} style={{ fontSize:12, color:"#fff", background:"#c94f4f", border:"none", borderRadius:6, padding:"4px 10px", cursor:"pointer" }}>確認する</button>
+            </div>
+          )}
           <div className="page-wrap">
             <div className="grid-2">
 
