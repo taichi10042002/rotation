@@ -53,6 +53,8 @@ const getAvatarSrc = (avatarId) => {
   return found ? found.src : AVATARS[0].src;
 };
 
+const NOTICE_ICON = "/pic/mail2.png";
+
 const generateUserId = () => {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   const rand = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
@@ -99,6 +101,10 @@ export default function App() {
   const [contactSent, setContactSent] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showNotices, setShowNotices] = useState(false);
+  const [appVersion, setAppVersion] = useState("");
+  const [notices, setNotices] = useState([]);
+  const [hasUnread, setHasUnread] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   // Handle invite link on load
@@ -178,6 +184,40 @@ export default function App() {
     return () => unsub();
   }, [userProfile?.pairedWith, currentUser]);
 
+  // バージョン取得
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "config", "app"), (snap) => {
+      if (snap.exists()) setAppVersion(snap.data().version || "");
+    });
+    return () => unsub();
+  }, []);
+
+
+
+
+  // お知らせ取得
+  useEffect(() => {
+    if (!currentUser) return;
+    const q = query(collection(db, "notices"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setNotices(list);
+      // 未読チェック：lastReadNoticeAtより新しいお知らせがあるか
+      const lastRead = userProfile?.lastReadNoticeAt?.toDate?.() || new Date(0);
+      const unread = list.some(n => n.createdAt?.toDate?.() > lastRead);
+      setHasUnread(unread);
+    });
+    return () => unsub();
+  }, [currentUser, userProfile?.lastReadNoticeAt]);
+
+  const handleOpenNotices = async () => {
+    setShowNotices(true);
+    setHasUnread(false);
+    if (!currentUser) return;
+    await setDoc(doc(db, "users", currentUser.uid), { lastReadNoticeAt: serverTimestamp() }, { merge: true });
+    setUserProfile(prev => ({ ...prev, lastReadNoticeAt: { toDate: () => new Date() } }));
+  };
+
   const fetchUserProfile = async (uid) => {
     const snap = await getDoc(doc(db, "users", uid));
     return snap.exists() ? { uid, ...snap.data() } : null;
@@ -224,7 +264,7 @@ export default function App() {
         pairedWith: null,
         createdAt: serverTimestamp(),
       });
-      showToast("登録しました！");
+      showToast("登録しました");
     } catch (e) {
       showToast(e.code === "auth/email-already-in-use" ? "このメールは既に登録済みです" : e.message, "error");
     }
@@ -422,7 +462,7 @@ export default function App() {
         createdAt: serverTimestamp(),
       });
       setForm({ account: "", amount: "", note: "" });
-      showToast("記帳しました ✓");
+      showToast("記帳しました");
     } catch (e) {
       showToast(e.message, "error");
     }
@@ -442,7 +482,7 @@ export default function App() {
       });
       await batch.commit();
       setShowSettleConfirm(false);
-      showToast("精算完了しました ✓");
+      showToast("精算完了しました");
     } catch (e) {
       showToast(e.message, "error");
     }
@@ -493,7 +533,7 @@ export default function App() {
       }, { merge: true });
       setUserProfile(prev => ({ ...prev, nickname: editForm.nickname.trim(), userId: editForm.userId.trim() }));
       setShowProfile(false);
-      showToast("プロフィールを更新しました ✓");
+      showToast("プロフィールを更新しました");
     } catch (e) {
       showToast(e.message, "error");
     }
@@ -507,7 +547,7 @@ export default function App() {
       // Also update entries in memory to reflect new avatar
       setEntries(prev => prev.map(e => e.userId === currentUser.uid ? { ...e, avatar: emoji } : e));
       setShowAvatarPicker(false);
-      showToast("アイコンを変更しました ✓");
+      showToast("アイコンを変更しました");
     } catch (e) {
       showToast(e.message, "error");
     }
@@ -886,9 +926,9 @@ export default function App() {
               </div>
               <div className="form-field">
                 <label>相手に請求する金額（円）</label>
-                <input type="number" placeholder="例：1500"
+                <input type="text" placeholder="例：1500"
                   value={editEntry.amount}
-                  onChange={e => setEditEntry({...editEntry, amount: e.target.value})} />
+                  onChange={e => { const v = e.target.value.replace(/[^0-9]/g,""); if(v === "" || parseInt(v||"0") <= 99999999) setEditEntry({...editEntry, amount: v}); }} inputMode="numeric" pattern="[0-9]*" />
               </div>
               <div className="form-field">
                 <label>メモ（任意）</label>
@@ -1133,6 +1173,13 @@ export default function App() {
                     <button className="btn-ghost" onClick={() => navigate("/register")}>新規登録</button>
                   </div>
                 </div>
+                {/* バージョン */}
+                {appVersion && (
+                  <p style={{ textAlign:"center", fontSize:11, color:"#b8b0a4", marginTop:16 }}>
+                    ver {appVersion}
+                  </p>
+                )}
+
                 {/* iPhone PWA hint */}
                 <div style={{
                   marginTop:24, padding:"16px 20px",
@@ -1295,6 +1342,20 @@ export default function App() {
                 <img src={getAvatarSrc(partnerProfile?.avatar)} alt="avatar" style={{ width:28, height:28, objectFit:"contain" }} />
                 <span style={{ fontSize:14, color:"#6b6358", fontWeight:600 }}>{partnerProfile?.nickname}</span>
               </div>
+
+              <button onClick={handleOpenNotices} style={{
+                position:"relative", background:"none", border:"none",
+                cursor:"pointer", padding:"12px 8px 0px 8px",
+              }}>
+                <img src={NOTICE_ICON} alt="お知らせ" style={{ width:24, height:24, objectFit:"contain" }} />
+                {hasUnread && (
+                  <span style={{
+                    position:"absolute", top:2, right:2,
+                    width:8, height:8, borderRadius:"50%",
+                    background:"#c94f4f", border:"2px solid #f5f2ee",
+                  }} />
+                )}
+              </button>
               <button onClick={openProfile} style={{
                 background:"rgba(122,158,126,0.1)", border:"1px solid rgba(122,158,126,0.3)",
                 color:"#5d8a62", fontSize:13, cursor:"pointer", borderRadius:8, padding:"6px 14px", fontWeight:600,
@@ -1314,10 +1375,25 @@ export default function App() {
             </div>
 
             {/* Mobile hamburger */}
-            <button className="hamburger" onClick={() => setShowMenu(v => !v)} style={{
-              background:"none", border:"none", color:"#3d3830",
-              fontSize:22, cursor:"pointer", padding:"4px 8px", lineHeight:1,
-            }}>☰</button>
+            <div className="hamburger" style={{ display:"flex", alignItems:"center" }}>
+              <button onClick={handleOpenNotices} style={{
+                position:"relative", background:"none", border:"none",
+                cursor:"pointer", padding:"12px 8px 0px 8px",
+              }}>
+                <img src={NOTICE_ICON} alt="お知らせ" style={{ width:22, height:22, objectFit:"contain" }} />
+                {hasUnread && (
+                  <span style={{
+                    position:"absolute", top:2, right:2,
+                    width:8, height:8, borderRadius:"50%",
+                    background:"#c94f4f", border:"2px solid #f5f2ee",
+                  }} />
+                )}
+              </button>
+              <button onClick={() => setShowMenu(v => !v)} style={{
+                background:"none", border:"none", color:"#3d3830",
+                fontSize:22, cursor:"pointer", padding:"4px 8px", lineHeight:1,
+              }}>☰</button>
+            </div>
 
             {/* Mobile dropdown menu */}
             {showMenu && (
@@ -1332,6 +1408,11 @@ export default function App() {
                     <span style={{ fontSize:13, fontWeight:700, color:"#3d3830" }}>{partnerProfile?.nickname}</span>
                   </div>
                 </div>
+                <button className="menu-item" style={{ color:"#3d3830", display:"flex", alignItems:"center", gap:8 }}
+                  onClick={() => { setShowMenu(false); handleOpenNotices(); }}>
+                  お知らせ
+                  {hasUnread && <span style={{ width:8, height:8, borderRadius:"50%", background:"#c94f4f", display:"inline-block" }} />}
+                </button>
                 <button className="menu-item" style={{ color:"#5d8a62" }}
                   onClick={() => { setShowMenu(false); openProfile(); }}>プロフィール編集</button>
                 <button className="menu-item" style={{ color:"#c94f4f" }}
@@ -1365,16 +1446,16 @@ export default function App() {
                 }}>
                   <p style={{ fontSize:11, color:"#9a9080", letterSpacing:2, marginBottom:12 }}>SETTLEMENT</p>
                   {diff===0 ? (
-                    <p style={{ fontSize:28, fontWeight:800 }}>{unsettledEntries.length === 0 ? "記帳がありません" : "ぴったり ✨"}</p>
+                    <p style={{ fontSize:28, fontWeight:800 }}>{unsettledEntries.length === 0 ? "記帳がありません" : "差額はありません"}</p>
                   ) : diff>0 ? (
                     <>
                       <p style={{ fontSize:13, color:"#6b6358", marginBottom:6 }}>{partnerProfile?.nickname} さんが支払う金額</p>
-                      <p style={{ fontSize:52, fontWeight:800, color:"#5d8a62", lineHeight:1 }}>¥{diff.toLocaleString()}</p>
+                      <p style={{ fontSize: diff >= 10000000 ? 28 : diff >= 1000000 ? 36 : diff >= 100000 ? 44 : 52, fontWeight:800, color:"#5d8a62", lineHeight:1, wordBreak:"break-all" }}>¥{diff.toLocaleString()}</p>
                     </>
                   ) : (
                     <>
                       <p style={{ fontSize:13, color:"#6b6358", marginBottom:6 }}>あなた（{userProfile?.nickname}）が支払う金額</p>
-                      <p style={{ fontSize:52, fontWeight:800, color:"#c94f4f", lineHeight:1 }}>¥{Math.abs(diff).toLocaleString()}</p>
+                      <p style={{ fontSize: Math.abs(diff) >= 10000000 ? 28 : Math.abs(diff) >= 1000000 ? 36 : Math.abs(diff) >= 100000 ? 44 : 52, fontWeight:800, color:"#c94f4f", lineHeight:1, wordBreak:"break-all" }}>¥{Math.abs(diff).toLocaleString()}</p>
                     </>
                   )}
                   <div style={{ display:"flex", gap:14, marginTop:24 }}>
@@ -1408,8 +1489,8 @@ export default function App() {
                     </div>
                     <div className="form-field">
                       <label>相手に請求する金額（円）</label>
-                      <input type="number" placeholder="0" value={form.amount}
-                        onChange={e => setForm({...form, amount:e.target.value})} />
+                      <input type="text" placeholder="0" value={form.amount}
+                        onChange={e => { const v = e.target.value.replace(/[^0-9]/g,""); if(v === "" || parseInt(v||"0") <= 99999999) setForm({...form, amount:v}); }} inputMode="numeric" pattern="[0-9]*" />
                     </div>
                     <div className="form-field">
                       <label>メモ（任意）</label>
@@ -1531,6 +1612,35 @@ export default function App() {
         </div>
       )}
 
+      {/* ===== お知らせモーダル ===== */}
+      {showNotices && (
+        <div className="modal-overlay" onClick={() => setShowNotices(false)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxHeight:"80vh", overflowY:"auto" }}>
+            <h3 style={{ fontSize:20, fontWeight:800, marginBottom:20, color:"#3d3830" }}>お知らせ</h3>
+            {notices.length === 0 ? (
+              <p style={{ color:"#b8b0a4", fontSize:14, textAlign:"center", padding:"20px 0" }}>お知らせはありません</p>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+                {notices.map(n => (
+                  <div key={n.id} style={{
+                    borderBottom:"1px solid #f0ece6", paddingBottom:16,
+                  }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                      <p style={{ fontSize:15, fontWeight:700, color:"#3d3830" }}>{n.title}</p>
+                      <p style={{ fontSize:11, color:"#b8b0a4", flexShrink:0, marginLeft:12 }}>
+                        {n.createdAt?.toDate?.().toLocaleDateString("ja-JP") ?? ""}
+                      </p>
+                    </div>
+                    <p style={{ fontSize:13, color:"#5a5248", lineHeight:1.8, whiteSpace:"pre-wrap" }}>{n.body}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button className="btn-ghost" style={{ marginTop:20 }} onClick={() => setShowNotices(false)}>閉じる</button>
+          </div>
+        </div>
+      )}
+
       {/* ===== プライバシーポリシーモーダル ===== */}
       {showPrivacyPolicy && (
         <div className="modal-overlay" onClick={() => setShowPrivacyPolicy(false)}>
@@ -1546,15 +1656,11 @@ export default function App() {
                 <p>収集した情報はアカウント管理・ペア機能・記帳機能の提供のみに使用します。第三者への販売・提供は行いません。</p>
               </div>
               <div>
-                <p style={{ fontWeight:700, marginBottom:6, color:"#3d3830" }}>3. 広告について</p>
-                <p>本アプリでは忍者AdMaxによる広告を表示しています。広告配信のためにCookieが使用される場合があります。</p>
-              </div>
-              <div>
-                <p style={{ fontWeight:700, marginBottom:6, color:"#3d3830" }}>4. データの保管・削除</p>
+                <p style={{ fontWeight:700, marginBottom:6, color:"#3d3830" }}>3. データの保管・削除</p>
                 <p>精算済みの記帳データは6ヶ月後に自動削除されます。アカウント削除時はすべてのデータが削除されます。</p>
               </div>
               <div>
-                <p style={{ fontWeight:700, marginBottom:6, color:"#3d3830" }}>5. お問い合わせ</p>
+                <p style={{ fontWeight:700, marginBottom:6, color:"#3d3830" }}>4. お問い合わせ</p>
                 <p>プライバシーに関するご質問は<a href="https://forms.gle/jsdKFSGNTmLPfNyj6" target="_blank" rel="noreferrer" style={{ color:"#5d8a62" }}>お問い合わせフォーム</a>よりご連絡ください。</p>
               </div>
               <p style={{ fontSize:12, color:"#9a9080" }}>最終更新：2026年3月</p>
@@ -1593,6 +1699,9 @@ export default function App() {
               borderBottom:"1px solid #ddd8cf", paddingBottom:1,
               cursor:"pointer", flexShrink:0,
             }}>プライバシーポリシー</button>
+            {appVersion && (
+              <p style={{ fontSize:11, color:"#b8b0a4", flexShrink:0 }}>ver {appVersion}</p>
+            )}
           </div>
         </div>
       )}
