@@ -1092,6 +1092,7 @@ setLoading(true); startProgress();
             <h3 style={{ fontSize:20, fontWeight:800, marginBottom:8, color:"#3d3830" }}>招待QRコード</h3>
             <p style={{ fontSize:13, color:"#8a8070", marginBottom:24 }}>
               相手にこのQRコードを読み取ってもらいましょう
+              <p style={{ fontSize:11, color:"#b8b0a4", marginTop:4 }}>表示されない場合はページを再読込してください</p>
             </p>
             {userProfile?.userId && (
               <div style={{ display:"flex", justifyContent:"center", marginBottom:20 }}>
@@ -1341,7 +1342,9 @@ setLoading(true); startProgress();
                             src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.origin + "?invite=" + userProfile.userId)}&bgcolor=faf8f5&color=3d3830&margin=2`}
                             alt="招待QRコード"
                             style={{ width:200, height:200, borderRadius:12, border:"1.5px solid #e8e2d9" }}
+                            onError={e => { e.target.style.display="none"; document.getElementById("qr-error-msg").style.display="block"; }}
                           />
+                          <p id="qr-error-msg" style={{ display:"none", fontSize:12, color:"#8a8070", marginTop:8 }}>表示できない場合はページを再読込してください</p>
                         </div>
 
                       </div>
@@ -1361,7 +1364,10 @@ setLoading(true); startProgress();
                       </div>
                     </>
                   ) : (
-                    <p style={{ color:"#b8b0a4", fontSize:14, textAlign:"center" }}>読み込み中...</p>
+                    <>
+                      <p style={{ color:"#b8b0a4", fontSize:14, textAlign:"center" }}>読み込み中...</p>
+                      <p style={{ color:"#c8c0b8", fontSize:11, textAlign:"center", marginTop:6 }}>表示されない場合はページを再読込してください</p>
+                    </>
                   )}
 
                   <button className="btn-ghost" onClick={handleLogout}>ログアウト</button>
